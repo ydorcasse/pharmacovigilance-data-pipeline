@@ -1,0 +1,13 @@
+# Data 
+data/bronze/
+# Virtual Environment
+.venv/
+# Keys 
+.env
+# Mac files
+.DS_Store
+# Python files
+__pycache__/
+*.pyc
+# DuckDB files
+*.duckdb
