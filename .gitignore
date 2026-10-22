@@ -11,3 +11,5 @@ __pycache__/
 *.pyc
 # DuckDB files
 *.duckdb
+# Logs files
+logs/
