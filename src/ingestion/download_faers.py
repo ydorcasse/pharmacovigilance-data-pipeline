@@ -5,6 +5,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import requests
 import boto3
+from botocore.exceptions import BotoCoreError, ClientError
 
 # Load configuration
 load_dotenv()
@@ -43,7 +44,7 @@ def download_faers_file(url: str) -> Path:
     """Télécharge le fichier FAERS depuis l'URL et l'enregistre dans data/bronze."""
     
     BRONZE_DIR.mkdir(parents=True, exist_ok=True)
-    response = requests.get(url)
+    response = requests.get(url, timeout=(10, 120))
     response.raise_for_status() # échoue si erreur HTTP
     file_name = Path(url).name
     file_path = BRONZE_DIR / file_name
@@ -65,14 +66,20 @@ def upload_to_s3(file_path: Path) -> None:
     s3_client.upload_file(str(file_path), s3_bucket_name, key)
     
 if __name__ == "__main__":
-    #  1. Construire l'URL (pour le trimestre 2026 Q2)
-    url = build_faers_url(2026, 2)
-    print(f"{url} construit")
-    
-    # 2. Télécharge le fichier
-    file_path = download_faers_file(url)
-    print("Téléchargement réussi")
-    
-    # 3. Uploader vers S3
-    upload_to_s3(file_path)
-    print("Uploader vers S3 réussi")
+    year, quarter = 2026, 2
+    url = build_faers_url(year, quarter)
+    print(f"URL construite : {url}")
+
+    try:
+        file_path = download_faers_file(url)
+        print(f"Téléchargement réussi : {file_path}")
+    except requests.exceptions.RequestException as exc:
+        print(f"Échec du téléchargement de {url} : {exc}")
+        raise SystemExit(1)
+
+    try:
+        upload_to_s3(file_path)
+        print("Envoi vers S3 réussi")
+    except (BotoCoreError, ClientError) as exc:
+        print(f"Échec de l'envoi vers S3 : {exc}")
+        raise SystemExit(1)
