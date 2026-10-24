@@ -44,7 +44,7 @@ def download_faers_file(url: str) -> Path:
     """Télécharge le fichier FAERS depuis l'URL et l'enregistre dans data/bronze."""
     
     BRONZE_DIR.mkdir(parents=True, exist_ok=True)
-    response = requests.get(url, timeout=(10, 120))
+    response = requests.get(url)
     response.raise_for_status() # échoue si erreur HTTP
     file_name = Path(url).name
     file_path = BRONZE_DIR / file_name
