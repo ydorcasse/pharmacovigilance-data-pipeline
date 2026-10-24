@@ -4,7 +4,8 @@ select
     sd.primaryid,
     sd.drugname,
     sd.prod_ai,
-    sr.pt as reaction_pt
+    sr.pt as reaction_pt,
+    dd.fda_dt
 from {{ ref('stg_drug') }} as sd
 join {{ ref('stg_reac') }} as sr
     on sd.primaryid = sr.primaryid
