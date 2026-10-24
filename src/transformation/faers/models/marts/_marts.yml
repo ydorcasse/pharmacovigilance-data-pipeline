@@ -1,0 +1,68 @@
+version: 2
+
+models:
+  - name: dim_demo
+    description: >
+      Dimension patient / cas. Dédupliquée : une ligne par caseid, en gardant la version la plus récente (max caseversion).
+    columns:
+      - name: primaryid
+        description: "Identifiant unique du rapport (caseid + caseversion)."
+        tests: [unique, not_null]
+      - name: caseid
+        description: "Identifiant du cas, stable entre versions."
+        tests: [unique, not_null]
+      - name: age
+        description: "Age du patient (à interpréter avec age_cod, l'unité)."
+      - name: sex
+        description: "Sexe du patient (M /F / UNK)."
+      - name: occr_country
+        description: "Pays de survenue de l'événement."
+
+  - name: dim_drug
+    description: "Dimension médicament : catalogue des médicaments distincts."
+    columns:
+      - name: drugname
+        description: "Nom du médicament."
+      - name: prod_ai
+        description: "Principe actif."
+  
+  - name: dim_reaction
+    description: "Dimension réaction : termes MedDRA (pt) distincts."
+    columns:
+      - name: pt
+        description: "Terme préféré MedDRA de la réaction."
+        tests: [unique, not_null]
+
+  - name: dim_outc
+    description: "Dimension issue : codes d'issues (DE décès, HO hospitalisation ...)."
+    columns:
+      - name: outc_cod
+        description: "Code de l'issue."
+        tests: [not_null]
+
+  - name: dim_date
+    description: "Dimension temps générée : une ligne par jour (année, trimestre, mois)."
+    columns:
+      - name: date_day
+        description: "La date (clé de la dimension)."
+        tests: [unique, not_null]
+
+  - name: fact_adverse_event
+    description: >
+      Table de faits (factless) : cooocurences (cas x médicament suspect x réaction).
+      Médicaments filtrés sur role_cod PS/SS; dédupliqué via la jointure à dim_demo.
+    columns:
+      - name: primaryid
+        description: "Lien vers le cas (dim_demo)"
+        tests:
+          - not_null
+          - relationships:
+            to: ref('dim_demo')
+            field: primaryid
+      - name: drugname
+        description: "Médicament suspect (lien vers dim_drug)."
+      - name: reaction_pt
+        description: "Réaction (lien vers dim_reaction)."
+        tests: [not_null]
+      - name: fda_dt
+        description: "Date de réception FDA (lien vers dim_date)."
