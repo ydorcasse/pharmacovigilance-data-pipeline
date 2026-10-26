@@ -4,7 +4,7 @@ Pipeline de data engineering de bout en bout sur les données de pharmacovigilan
 **FDA FAERS**, en architecture **médaillon** (bronze → silver → gold), avec AWS S3,
 dbt et DuckDB, et restitution sous Tableau.
 
-![Architecture](docs/architecture.png)
+![Architecture](images/architecture_faers.jpeg)
 
 ## 🎯 Objectif
 Transformer les extraits trimestriels bruts de FAERS en un **modèle dimensionnel
