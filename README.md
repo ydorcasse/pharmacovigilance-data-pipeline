@@ -1,3 +1,5 @@
+![CI](https://github.com/<ton-user>/<ton-repo>/actions/workflows/ci.yml/badge.svg)
+
 # Pharmacovigilance Data Pipeline — FDA FAERS
 
 Pipeline de data engineering de bout en bout sur les données de pharmacovigilance
