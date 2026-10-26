@@ -13,6 +13,12 @@ models:
         tests: [unique, not_null]
       - name: age
         description: "Age du patient (à interpréter avec age_cod, l'unité)."
+      - name: age_years
+        description: "Age du patient normalisé en années (selon age_cod, null si unité et âge inconnu)."  
+      - name: age_group
+        description: "Tranche d'âge: 0 - 17, 18 - 64, 65+, et Unknown."
+      - name: reporter_type
+        description: "Type de déclarant décodé"
       - name: sex
         description: "Sexe du patient (M /F / UNK)."
       - name: occr_country
@@ -57,8 +63,9 @@ models:
         tests:
           - not_null
           - relationships:
-            to: ref('dim_demo')
-            field: primaryid
+              arguments:
+                 to: ref('dim_demo')
+                 field: primaryid
       - name: drugname
         description: "Médicament suspect (lien vers dim_drug)."
       - name: reaction_pt

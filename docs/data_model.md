@@ -37,3 +37,13 @@ Dimensions :
 - Format ASCII (vs SGML) : plus simple à parser
 - dbt + DuckDB pour silver/gold
 - THER et INDI : hors modèle principal pour l'instant (raffinements futurs)
+
+## Observations de qualité des données
+
+- `age` et `age_cod` sont toujours nuls ensemble (~37 % des cas sans âge).
+  → age_years = null quand l'unité est inconnue (choix conservateur).
+- `occp_cod` réel ≠ doc FAERS : présence de `HP`, absence de `OT`.
+  ~72 % des déclarants sont inconnus (valeur vide).
+- `fda_dt` : quelques dates aberrantes hors trimestre (2 lignes en 2025 Q4
+  dans l'extrait 2026 Q2).
+- Règle de dédup : max(caseversion) par caseid (1 doublon retiré sur Q2).
