@@ -1,4 +1,4 @@
-![CI](https://github.com/<ton-user>/<ton-repo>/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/ydorcasse/pharmacovigilance-data-pipeline/actions/workflows/ci.yml/badge.svg)
 
 # Pharmacovigilance Data Pipeline — FDA FAERS
 
