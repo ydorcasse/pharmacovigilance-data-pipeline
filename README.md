@@ -24,32 +24,42 @@ médicament ↔ effet indésirable (base des métriques de disproportionnalité 
 - **Gold** — star schema dbt : dimensions (`dim_demo` dédupliquée, `dim_drug`, `dim_reaction`, `dim_outc`, `dim_date`) + table de faits `fact_adverse_event`.
 
 ## 📁 Structure du projet
-​```
+
 pharmacovigilance-data-pipeline/
 ├── data/bronze/              # données brutes (DVC)
 ├── src/ingestion/            # script d'ingestion Python
 ├── src/transformation/faers/ # projet dbt (models/staging, models/marts)
 ├── docs/                     # documentation, modèle de données
-├── images/                   # architecture
+├── images/                   # images
 └── requirements.txt
-​```
 
 ## 🚀 Reproduire le pipeline
+
+### 1. Environnement
+
 ​```bash
-# 1. Environnement
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+```
 
-# 2. Configurer les credentials AWS (aws configure) + le .env
+### 2. Configurer les credentials AWS (aws configure) + le .env
 
-# 3. Récupérer la donnée bronze
+### 3. Récupérer la donnée bronze
+
+​```bash
 dvc pull
 unzip data/bronze/faers_ascii_2026q2.zip -d data/bronze/faers_ascii_2026q2
+```
 
-# 4. Ingestion (optionnel, pour un nouveau trimestre)
+### 4. Ingestion (optionnel, pour un nouveau trimestre)
+
+​```bash
 python src/ingestion/download_faers.py
+```
 
-# 5. Transformations dbt
+### 5. Transformations dbt
+
+​```bash
 cd src/transformation/faers
 dbt run
 dbt test
