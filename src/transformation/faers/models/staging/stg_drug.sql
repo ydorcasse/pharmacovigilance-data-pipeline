@@ -6,7 +6,7 @@ select
     drugname,
     prod_ai
 from read_csv(
-    '../../../data/bronze/faers_ascii_2026q2/ASCII/DRUG26Q2.txt',
+    '../../../data/bronze/faers_ascii_*/ASCII/DRUG*.txt',
     delim = '$',
     header = true,
     all_varchar = true
