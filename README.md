@@ -18,7 +18,7 @@ médicament ↔ effet indésirable (base des métriques de disproportionnalité 
 - **Stockage brut** : AWS S3 (bronze)
 - **Versionnement** : Git (code) + DVC (données)
 - **Transformation** : dbt + DuckDB (silver & gold)
-- **Restitution** : Tableau
+<!-- - **Restitution** : Tableau -->
 
 ## 🏗️ Architecture médaillon
 - **Bronze**: données brutes (.zip ASCII `$`-délimité) stockées sur S3, versionnées par DVC.
@@ -46,19 +46,19 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Configurer les credentials AWS (aws configure) + le .env
+### 2. Créer le fichier .env à la racine du projet contenant `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION` et `S3_BUCKET_NAME`. Ne pas ajouter ce fichier au dépôt Git.
 
 ### 3. Récupérer la donnée bronze
 
 ```bash
 dvc pull
-unzip data/bronze/faers_ascii_2026q2.zip -d data/bronze/faers_ascii_2026q2
+python src/ingestion/unzip_faers.py --year 2026 --quarter 2
 ```
 
 ### 4. Ingestion (optionnel, pour un nouveau trimestre)
 
 ```bash
-python src/ingestion/download_faers.py
+python src/ingestion/download_faers.py --year 2026 --quarter 2
 ```
 
 ### 5. Transformations dbt
@@ -67,4 +67,4 @@ python src/ingestion/download_faers.py
 cd src/transformation/faers
 dbt run
 dbt test
-​```
+```
