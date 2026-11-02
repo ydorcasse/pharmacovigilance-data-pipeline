@@ -33,6 +33,7 @@ pharmacovigilance-data-pipeline/
 ├── src/transformation/faers/ # projet dbt (models/staging, models/marts)
 ├── docs/                     # documentation, modèle de données
 ├── images/                   # images
+├── orchestration             # orchestration airflow(Astro)
 └── requirements.txt
 ```
 
