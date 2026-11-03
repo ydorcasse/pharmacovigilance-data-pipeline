@@ -1,11 +1,16 @@
 # Import libraries
 import zipfile
+import logging
+from src.utils.logging_config import setup_logging
 from pathlib import Path
 import argparse
 
 # Define Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 BRONZE_DIR = PROJECT_ROOT / "data" / "bronze"
+
+# Logging
+logger = logging.getLogger(__name__)
 
 def unzip_faers(year: int, quarter: int) -> Path:
     if year < 2004:
@@ -22,16 +27,24 @@ def unzip_faers(year: int, quarter: int) -> Path:
     unzip_path = BRONZE_DIR / zip_path.stem
     
     if unzip_path.exists():
-        print(f"{zip_path.stem} déjà décompressé.")
+        logger.info(f"{zip_path.stem} déjà décompressé, extraction ignorée.")
+        return unzip_path
     
     unzip_path.mkdir(parents=True, exist_ok=True)
     
+    logger.info(f"Décompression de {zip_path.name}")
     with zipfile.ZipFile(zip_path, "r") as zf:
         zf.extractall(unzip_path)
-        
+    logger.info(f"Décompression terminée : {unzip_path}")   
+    
     return unzip_path
 
 if __name__ == "__main__":
+    
+    # Setup logging
+    setup_logging()
+    
+    # Arguments CLI
     parser = argparse.ArgumentParser(description="Unzip a FAERS quarter")
     parser.add_argument("--year", type=int, required=True)
     parser.add_argument("--quarter", type=int, required=True)
@@ -39,10 +52,13 @@ if __name__ == "__main__":
     
     try:
         extract_dir = unzip_faers(args.year, args.quarter)
-        print(f"Extraction terminé dans : {extract_dir}")
-    except ValueError as exc:
-        parser.error(str(exc))
-    except FileNotFoundError as exc:
-        parser.error(str(exc))
-    except zipfile.BadZipFile as exc:
-        parser.error(f"Le fichier ZIP est invalide : {exc}")
+        logger.info(f"Extraction terminé dans : {extract_dir}")
+    except ValueError:
+        logger.exception(f"Année {args.year} ou trimestre {args.quarter} pas correct.")
+        raise SystemExit(1)
+    except FileNotFoundError:
+        logger.exception("Fichier ZIP introuvable")
+        raise SystemExit(1)
+    except zipfile.BadZipFile:
+        logger.exception("Fichier zip corrompu")
+        raise SystemExit(1)

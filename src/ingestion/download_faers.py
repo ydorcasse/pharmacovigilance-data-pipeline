@@ -1,5 +1,7 @@
 # Import libraries
-import os 
+import os
+import logging
+from src.utils.logging_config import setup_logging
 from pathlib import Path
 import argparse
 
@@ -11,6 +13,9 @@ from botocore.exceptions import BotoCoreError, ClientError
 # Define paths
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 BRONZE_DIR = PROJECT_ROOT / "data" / "bronze"
+
+# Logging
+logger = logging.getLogger(__name__)
 
 # Load configuration
 def load_aws_config():
@@ -74,16 +79,21 @@ def s3_object_exists(s3_client, bucket: str, key: str) -> bool:
     
 if __name__ == "__main__":
     
+    # Setup logging
+    setup_logging()
+    
     # Arguments CLI
     parser = argparse.ArgumentParser(description="Ingest a FAERS quarter to S3")
     parser.add_argument("--year", type=int, required=True)
     parser.add_argument("--quarter", type=int, required=True)
     args = parser.parse_args()
     
+    logger.info(f"=== Ingestion FAERS {args.year} Q{args.quarter} ===")
+    
     # Construction de l'URL
     try:
         url = build_faers_url(args.year, args.quarter)
-        print(f"URL construite : {url}")
+        logger.info(f"URL construite : {url}")
     except ValueError as exc:
         parser.error(str(exc))
     
@@ -95,6 +105,7 @@ if __name__ == "__main__":
     try:
         config = load_aws_config()
     except ValueError as exc:
+        logger.error(f"Configuration AWS invalide : {exc}")
         parser.error(str(exc))
     
     s3_client = boto3.client(
@@ -106,13 +117,13 @@ if __name__ == "__main__":
     
     #  Téléchargement
     if file_path.exists():
-        print(f"{key} déjà présent en local.")
+        logger.info(f"{key} déjà présent en local.")
     else:
         try:
             file_path = download_faers_file(url)
-            print(f"Téléchargement réussi : {file_path}")
+            logger.info(f"Téléchargement réussi : {file_path}")
         except requests.exceptions.RequestException as exc:
-            print(f"Echec du téléchargement de {url} : {exc}")
+            logger.exception(f"Echec du téléchargement de {url}")
             raise SystemExit(1)
     
     # Upload
@@ -121,7 +132,9 @@ if __name__ == "__main__":
     else:
         try:
             upload_to_s3(s3_client, config["s3_bucket_name"], file_path)
-            print("Envoi vers S3 réussi.")
+            logger.info("Envoi vers S3 réussi.")
         except (BotoCoreError, ClientError) as exc:
-            print(f"Echec de l'envoi vers S3 : {exc}")
+            logger.exception(f"Echec de l'envoi vers S3")
             raise SystemExit(1)
+    
+    logger.info("=== Ingestion terminée ===")
