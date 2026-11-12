@@ -128,7 +128,7 @@ if __name__ == "__main__":
     
     # Upload
     if s3_object_exists(s3_client, config["s3_bucket_name"], key):
-        print(f"{key} déjà présent dans S3.")
+        logger.info(f"{key} déjà présent dans S3.")
     else:
         try:
             upload_to_s3(s3_client, config["s3_bucket_name"], file_path)
