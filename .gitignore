@@ -6,6 +6,8 @@ data/bronze/*/
 .env
 # Mac files
 .DS_Store
+# VSCode files
+.vscode/
 # Python files
 __pycache__/
 *.pyc
