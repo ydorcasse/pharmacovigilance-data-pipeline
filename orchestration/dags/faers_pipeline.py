@@ -1,24 +1,38 @@
-from airflow.sdk import dag
+from airflow.sdk import dag, Param
 from airflow.providers.standard.operators.bash import BashOperator
 from pendulum import datetime
 
 @dag(
     start_date=datetime(2025, 1, 1),
-    schedule="@quarterly",    # trimestriel (quand la FDA publie)
+    schedule="0 6 15 2,5,8,11 *",    # trimestriel (quand la FDA publie)
     catchup=False,  # ne pas rattraper les intervalles passés
     tags=["faers"],
+    params={
+        "year": Param(None, type=["null", "integer"]),
+        "quarter": Param(None, type=["null", "integer"]),
+    },
 )
 
 def faers_pipeline():
     
     download = BashOperator(
         task_id="download_faers",
-        bash_command="python /usr/local/airflow/src/ingestion/download_faers.py --year 2026 --quarter 2",
+        bash_command=(
+            "cd /usr/local/airflow && "
+            "python -m src.ingestion.download_faers "
+            "--year {{ params.year or (logical_date.year if logical_date.month > 3 else logical_date.year - 1) }} "
+            "--quarter {{ params.quarter or (((logical_date.month - 1) // 3) or 4) }}"
+        ),
     )
     
     unzip = BashOperator(
         task_id="unzip_faers",
-        bash_command="python /usr/local/airflow/src/ingestion/unzip_faers.py --year 2026 --quarter 2",
+        bash_command=(
+            "cd /usr/local/airflow && "
+            "python -m src.ingestion.unzip_faers "
+            "--year {{ params.year or (logical_date.year if logical_date.month > 3 else logical_date.year - 1) }} "
+            "--quarter {{ params.quarter or (((logical_date.month - 1) // 3) or 4) }}"
+        ),
     )
     
     dbt_run = BashOperator(
