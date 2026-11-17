@@ -33,6 +33,7 @@ with deduped as (
         occr_country
     from 
         {{ ref('stg_demo') }}
+    where caseid not in (select caseid from {{ ref('stg_deleted') }})
     qualify row_number() over (partition by caseid order by caseversion desc) = 1
 )
 
