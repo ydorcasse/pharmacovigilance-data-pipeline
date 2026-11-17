@@ -3,7 +3,8 @@ version: 2
 models:
   - name: dim_demo
     description: >
-      Dimension patient / cas. Dédupliquée : une ligne par caseid, en gardant la version la plus récente (max caseversion).
+      Dimension cas/patient. Dédupliquée (une ligne par caseid, version max),
+      cas supprimés par la FDA exclus.
     columns:
       - name: primaryid
         description: "Identifiant unique du rapport (caseid + caseversion)."
@@ -11,43 +12,64 @@ models:
       - name: caseid
         description: "Identifiant du cas, stable entre versions."
         tests: [unique, not_null]
-      - name: age
-        description: "Age du patient (à interpréter avec age_cod, l'unité)."
       - name: age_years
-        description: "Age du patient normalisé en années (selon age_cod, null si unité et âge inconnu)."  
+        description: "Âge normalisé en années (null si inconnu)."
       - name: age_group
-        description: "Tranche d'âge: 0 - 17, 18 - 64, 65+, et Unknown."
-      - name: reporter_type
-        description: "Type de déclarant décodé"
+        description: "Tranche d'âge."
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['0 - 17', '18 - 64', '65+', 'Unknown']
       - name: sex
-        description: "Sexe du patient (M /F / UNK)."
+        description: "Sexe décodé."
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['Male', 'Female', 'Unknown']
+      - name: reporter_type
+        description: "Type de déclarant décodé."
       - name: occr_country
         description: "Pays de survenue de l'événement."
 
   - name: dim_drug
-    description: "Dimension médicament : catalogue des médicaments distincts."
+    description: "Dimension médicament : catalogue des produits distincts (clé = drug_key)."
     columns:
-      - name: drugname
-        description: "Nom du médicament."
-      - name: prod_ai
-        description: "Principe actif."
-  
-  - name: dim_reaction
-    description: "Dimension réaction : termes MedDRA (pt) distincts."
-    columns:
-      - name: pt
-        description: "Terme préféré MedDRA de la réaction."
+      - name: drug_key
+        description: "Clé normalisée du médicament."
         tests: [unique, not_null]
+      - name: drugname
+        description: "Nom représentant du médicament."
 
-  - name: dim_outc
-    description: "Dimension issue : codes d'issues (DE décès, HO hospitalisation ...)."
+  - name: dim_active_ingredient
+    description: "Dimension principe actif : catalogue des principes actifs distincts."
     columns:
-      - name: outc_cod
-        description: "Code de l'issue."
+      - name: active_ingredient_key
+        description: "Clé normalisée du principe actif."
+        tests: [unique, not_null]
+      - name: active_ingredient_name
+        description: "Nom représentant du principe actif."
+
+  - name: dim_reaction
+    description: "Dimension réaction : termes MedDRA (pt) distincts (clé = reaction_key)."
+    columns:
+      - name: reaction_key
+        description: "Clé normalisée de la réaction."
+        tests: [unique, not_null]
+      - name: pt
+        description: "Terme préféré MedDRA représentant."
         tests: [not_null]
 
+  - name: dim_outc
+    description: "Dimension issue : 7 codes d'issue + libellé lisible."
+    columns:
+      - name: outc_cod
+        description: "Code de l'issue (clé)."
+        tests: [unique, not_null]
+      - name: outcome_label
+        description: "Libellé lisible du code."
+
   - name: dim_date
-    description: "Dimension temps générée : une ligne par jour (année, trimestre, mois)."
+    description: "Dimension temps générée : une ligne par jour."
     columns:
       - name: date_day
         description: "La date (clé de la dimension)."
@@ -55,21 +77,66 @@ models:
 
   - name: fact_adverse_event
     description: >
-      Table de faits (factless) : cooocurences (cas x médicament suspect x réaction).
-      Médicaments filtrés sur role_cod PS/SS; dédupliqué via la jointure à dim_demo.
+      Fait principal : une ligne par (cas retenu × médicament suspect × réaction),
+      clés uniquement. Médicaments filtrés sur role_cod PS/SS; cas retenus via dim_demo.
     columns:
       - name: primaryid
-        description: "Lien vers le cas (dim_demo)"
+        description: "FK vers dim_demo."
         tests:
           - not_null
           - relationships:
               arguments:
-                 to: ref('dim_demo')
-                 field: primaryid
-      - name: drugname
-        description: "Médicament suspect (lien vers dim_drug)."
-      - name: reaction_pt
-        description: "Réaction (lien vers dim_reaction)."
-        tests: [not_null]
+                to: ref('dim_demo')
+                field: primaryid
+      - name: drug_key
+        description: "FK vers dim_drug."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_drug')
+                field: drug_key
+      - name: active_ingredient_key
+        description: "FK vers dim_active_ingredient (nullable : produits sans PA connu)."
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_active_ingredient')
+                field: active_ingredient_key
+      - name: reaction_key
+        description: "FK vers dim_reaction."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_reaction')
+                field: reaction_key
       - name: fda_dt
-        description: "Date de réception FDA (lien vers dim_date)."
+        description: "FK vers dim_date (date de réception FDA, nullable)."
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+
+  - name: fact_case_outcome
+    description: >
+      Factless fact : une ligne par (cas retenu x issue). Un cas peut avoir
+      plusieurs issues, donc primaryid n'est PAS unique ici.
+    columns:
+      - name: primaryid
+        description: "FK vers dim_demo."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_demo')
+                field: primaryid
+      - name: outc_cod
+        description: "FK vers dim_outc."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_outc')
+                field: outc_cod
