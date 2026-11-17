@@ -1,7 +1,7 @@
 select
     primaryid,
     caseid,
-    outc_cod
+    nullif(upper(trim(outc_cod)), '') as outc_cod
 from read_csv(
     '../../../data/bronze/faers_ascii_*/ASCII/OUTC*.txt',
     delim = '$',
