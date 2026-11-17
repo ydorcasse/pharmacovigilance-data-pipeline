@@ -140,3 +140,29 @@ models:
               arguments:
                 to: ref('dim_outc')
                 field: outc_cod
+
+  - name: signal_disproportionality
+    description: >
+      Mart de détection de signal (disproportionnalité). Grain : une ligne par
+      couple (drug_key x reaction_key) observé dans fact_adverse_event, avec son
+      tableau de contingence 2x2 (a, b, c, d) calculé sur des CAS distincts
+      (primaryid), et les métriques associées : PRR, ROR avec intervalle de
+      confiance à 95 % (ror_lower / ror_upper) et chi². is_signal applique le
+      critère standard : a >= 3 et borne basse de l'IC95 du ROR > 1.
+    columns:
+      - name: drug_key
+        description: "FK vers dim_drug"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_drug')
+                field: drug_key
+      - name: reaction_key
+        description: "FK vers dim_reaction"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_reaction')
+                field: reaction_key
