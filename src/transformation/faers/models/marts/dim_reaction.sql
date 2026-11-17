@@ -1,5 +1,7 @@
 select distinct
-    pt
+    reaction_key,
+    min(pt) as pt
 from
     {{ ref('stg_reac') }}
-where pt is not null
+where reaction_key is not null
+group by reaction_key

@@ -1,8 +1,7 @@
 select distinct
-    drugname,
-    prod_ai
+    drug_key,
+    min(drugname) as drugname
 from
     {{ ref('stg_drug') }}
-where 
-    drugname is not null 
-    and prod_ai is not null
+where drug_key is not null 
+group by drug_key

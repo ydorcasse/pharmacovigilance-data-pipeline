@@ -1,7 +1,8 @@
 select
     primaryid,
     caseid,
-    pt
+    pt,
+    nullif(lower(trim(pt)), '') as reaction_key
 from read_csv(
     '../../../data/bronze/faers_ascii_*/ASCII/REAC*.txt',
     delim = '$',

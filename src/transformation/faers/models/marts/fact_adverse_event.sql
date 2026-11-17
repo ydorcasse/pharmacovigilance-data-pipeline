@@ -1,10 +1,10 @@
 {{ config(materialized='table') }}
 
-select
+select distinct
     sd.primaryid,
-    sd.drugname,
-    sd.prod_ai,
-    sr.pt as reaction_pt,
+    sd.drug_key,
+    sd.active_ingredient_key,
+    sr.reaction_key,
     dd.fda_dt
 from {{ ref('stg_drug') }} as sd
 join {{ ref('stg_reac') }} as sr
@@ -12,3 +12,5 @@ join {{ ref('stg_reac') }} as sr
 join {{ ref('dim_demo') }} as dd
     on sd.primaryid = dd.primaryid
 where sd.role_cod in ('PS', 'SS')
+    and sd.drug_key is not null
+    and sr.reaction_key is not null
