@@ -3,27 +3,34 @@
 # Pharmacovigilance Data Pipeline — FDA FAERS
 
 Pipeline de data engineering de bout en bout sur les données de pharmacovigilance
-**FDA FAERS**, en architecture **médaillon** (bronze → silver → gold), avec AWS S3,
-dbt et DuckDB, et restitution sous Tableau.
+**FDA FAERS** (4 trimestres : 2025 Q3 → 2026 Q2), en architecture **médaillon**
+(bronze → silver → gold) avec AWS S3, dbt et DuckDB, et restitution sous Tableau.
 
 ![Architecture](images/architecture_faers.jpeg)
 
 ## 🎯 Objectif
 Transformer les extraits trimestriels bruts de FAERS en un **modèle dimensionnel
-(star schema)** analysable, permettant d'étudier les associations
-médicament ↔ effet indésirable (base des métriques de disproportionnalité PRR / ROR).
+(star schema)** analysable, et **calculer des métriques de disproportionnalité
+(PRR / ROR / IC95 / chi²)** pour la détection de signal médicament ↔ effet
+indésirable — avec le cadrage scientifique associé (un signal est une hypothèse,
+pas une preuve de causalité).
 
 ## 🛠️ Stack technique
 - **Ingestion** : Python (requests, boto3)
 - **Stockage brut** : AWS S3 (bronze)
 - **Versionnement** : Git (code) + DVC (données)
 - **Transformation** : dbt + DuckDB (silver & gold)
-<!-- - **Restitution** : Tableau -->
+- **Analyse** : mart de disproportionnalité (PRR / ROR / IC95 / chi²)
+- **Orchestration** : Airflow (Astro)
+- **Restitution** : Tableau (à venir)
 
 ## 🏗️ Architecture médaillon
 - **Bronze**: données brutes (.zip ASCII `$`-délimité) stockées sur S3, versionnées par DVC.
-- **Silver**: modèles de staging dbt : lecture, nettoyage, typage (`stg_demo`, `stg_drug`, `stg_reac`, `stg_outc`).
-- **Gold** star schema dbt : dimensions (`dim_demo` dédupliquée, `dim_drug`, `dim_reaction`, `dim_outc`, `dim_date`) + table de faits `fact_adverse_event`.
+- **Silver** : modèles de staging dbt (lecture, nettoyage, typage, clés normalisées) : `stg_demo`, `stg_drug`, `stg_reac`, `stg_outc`, `stg_deleted`.
+- **Gold** : star schema dbt —
+  - **dimensions** : `dim_demo` (dédupliquée, cas supprimés exclus), `dim_drug`, `dim_active_ingredient`, `dim_reaction`, `dim_outc`, `dim_date` ;
+  - **faits** : `fact_adverse_event` (cas × médicament suspect × réaction), `fact_case_outcome` (cas × issue) ;
+  - **mart analytique** : `signal_disproportionality` (PRR / ROR / IC95 / chi² + flag `is_signal`).
 
 ## 📁 Structure du projet
 ```
@@ -53,19 +60,18 @@ pip install -r requirements.txt
 
 ```bash
 dvc pull
-python src/ingestion/unzip_faers.py --year 2026 --quarter 2
+python -m src.ingestion.unzip_faers --year 2026 --quarter 2
 ```
 
 ### 4. Ingestion (optionnel, pour un nouveau trimestre)
 
 ```bash
-python src/ingestion/download_faers.py --year 2026 --quarter 2
+python -m src.ingestion.download_faers --year 2026 --quarter 2
 ```
 
 ### 5. Transformations dbt
 
 ```bash
 cd src/transformation/faers
-dbt run
-dbt test
+dbt build   # construit les modèles puis lance les tests (clés, FK, grain)
 ```
